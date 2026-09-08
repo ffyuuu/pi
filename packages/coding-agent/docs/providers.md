@@ -73,6 +73,7 @@ pi
 | Azure OpenAI Responses | `AZURE_OPENAI_API_KEY` | `azure-openai-responses` |
 | OpenAI | `OPENAI_API_KEY` | `openai` |
 | DeepSeek | `DEEPSEEK_API_KEY` | `deepseek` |
+| LongCat | `LONGCAT_API_KEY` | `longcat` |
 | NVIDIA NIM | `NVIDIA_API_KEY` | `nvidia` |
 | Google Gemini | `GEMINI_API_KEY` | `google` |
 | Amazon Bedrock | `AWS_BEARER_TOKEN_BEDROCK` | `amazon-bedrock` |
@@ -106,6 +107,17 @@ pi
 
 Reference for environment variables and `auth.json` keys: [`const envMap`](https://github.com/earendil-works/pi/blob/main/packages/ai/src/env-api-keys.ts) in [`packages/ai/src/env-api-keys.ts`](https://github.com/earendil-works/pi/blob/main/packages/ai/src/env-api-keys.ts).
 
+#### LongCat
+
+Get an API key from the [LongCat platform](https://longcat.chat/platform), then run:
+
+```bash
+export LONGCAT_API_KEY="your-api-key"
+pi --provider longcat --model LongCat-2.0 --thinking high
+```
+
+You can also use `/login` and select LongCat. `LongCat-2.0` supports text and tool calling with a 1,048,576-token context window and up to 131,072 output tokens. Thinking has two settings: `off` and `high` (enabled). Use `--thinking off` to disable it.
+
 #### Auth File
 
 Store credentials in `~/.pi/agent/auth.json`:
@@ -116,6 +128,7 @@ Store credentials in `~/.pi/agent/auth.json`:
   "ant-ling": { "type": "api_key", "key": "..." },
   "openai": { "type": "api_key", "key": "sk-..." },
   "deepseek": { "type": "api_key", "key": "sk-..." },
+  "longcat": { "type": "api_key", "key": "..." },
   "nvidia": { "type": "api_key", "key": "nvapi-..." },
   "google": { "type": "api_key", "key": "..." },
   "opencode": { "type": "api_key", "key": "..." },

@@ -370,6 +370,7 @@ describe("deferred tools", () => {
 			maxTokensField: "max_tokens",
 			requiresToolResultName: false,
 			requiresAssistantAfterToolResult: false,
+			requiresAssistantContentString: false,
 			requiresThinkingAsText: false,
 			requiresReasoningContentOnAssistantMessages: false,
 			thinkingFormat: "openai",

@@ -602,6 +602,7 @@ const OPENAI_COMPLETIONS_DEFAULT_COMPAT = {
 	maxTokensField: "max_completion_tokens",
 	requiresToolResultName: false,
 	requiresAssistantAfterToolResult: false,
+	requiresAssistantContentString: false,
 	requiresThinkingAsText: false,
 	requiresReasoningContentOnAssistantMessages: false,
 	thinkingFormat: "openai",
@@ -695,6 +696,7 @@ function detectOpenAICompletionsCompat(model: Model<"openai-completions">): Open
 		maxTokensField: useMaxTokens ? "max_tokens" : "max_completion_tokens",
 		requiresToolResultName: false,
 		requiresAssistantAfterToolResult: false,
+		requiresAssistantContentString: false,
 		requiresThinkingAsText: false,
 		requiresReasoningContentOnAssistantMessages: isDeepSeek,
 		thinkingFormat: isDeepSeek
@@ -2217,6 +2219,38 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 				});
 				recordModelsDevReasoningOptions("kimi-coding", normalizedId, m);
 			}
+		}
+
+		// LongCat's model-detail API documents tool support and the exact context limit.
+		// Use standard USD prices, not the temporary launch discount.
+		// https://longcat.chat/platform/docs/zh/api/model
+		// https://longcat.chat/platform/docs/zh/pricing
+		const longcat = data.longcat?.models?.["LongCat-2.0"];
+		if (longcat?.tool_call === true && longcat.status !== "deprecated") {
+			models.push({
+				id: "LongCat-2.0",
+				name: longcat.name || "LongCat 2.0",
+				api: "openai-completions",
+				provider: "longcat",
+				baseUrl: "https://api.longcat.chat/openai/v1",
+				reasoning: true,
+				thinkingLevelMap: { minimal: null, low: null, medium: null },
+				input: ["text"],
+				cost: { input: 0.75, output: 2.95, cacheRead: 0.015, cacheWrite: 0 },
+				contextWindow: 1048576,
+				maxTokens: 131072,
+				compat: {
+					supportsStore: false,
+					supportsDeveloperRole: false,
+					supportsReasoningEffort: false,
+					maxTokensField: "max_tokens",
+					requiresAssistantContentString: true,
+					requiresReasoningContentOnAssistantMessages: true,
+					thinkingFormat: "deepseek",
+					supportsStrictMode: false,
+					supportsLongCacheRetention: false,
+				},
+			});
 		}
 
 		// Process Moonshot AI models

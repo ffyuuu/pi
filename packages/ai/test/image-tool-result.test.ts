@@ -4,6 +4,7 @@ import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import type { Api, Context, Model, Tool, ToolResultMessage } from "../src/compat.ts";
 import { complete, getModel } from "../src/compat.ts";
+import { fauxAssistantMessage, fauxToolCall } from "../src/providers/faux.ts";
 import type { StreamOptions } from "../src/types.ts";
 
 type StreamOptionsWithExtras = StreamOptions & Record<string, unknown>;
@@ -207,6 +208,57 @@ async function handleToolWithTextAndImageResult<TApi extends Api>(
 }
 
 describe("Tool Results with Images", () => {
+	describe("LongCat text-only model", () => {
+		it.each([false, true])("omits tool result images while preserving text (with text: %s)", async (withText) => {
+			const model = getModel("longcat", "LongCat-2.0");
+			const assistant = {
+				...fauxAssistantMessage(fauxToolCall("get_circle", {}, { id: "call_circle" }), { stopReason: "toolUse" }),
+				api: model.api,
+				provider: model.provider,
+				model: model.id,
+			};
+			const toolResult: ToolResultMessage = {
+				role: "toolResult",
+				toolCallId: "call_circle",
+				toolName: "get_circle",
+				content: [{ type: "image", data: "aW1hZ2U=", mimeType: "image/png" }],
+				isError: false,
+				timestamp: 0,
+			};
+			if (withText) toolResult.content.unshift({ type: "text", text: "Diameter: 100 pixels." });
+			let payload: Record<string, unknown> | undefined;
+			const response = await complete(
+				model,
+				{
+					messages: [{ role: "user", content: "Get the circle.", timestamp: 0 }, assistant, toolResult],
+					tools: [{ name: "get_circle", description: "Get a circle", parameters: Type.Object({}) }],
+				},
+				{
+					apiKey: "test-key",
+					reasoningEffort: "high",
+					fetch: async (input, init) => {
+						payload = (await new Request(input, init).json()) as Record<string, unknown>;
+						const chunk = { choices: [{ index: 0, delta: { content: "ok" }, finish_reason: "stop" }] };
+						return new Response(`data: ${JSON.stringify(chunk)}\n\ndata: [DONE]\n\n`, {
+							headers: { "Content-Type": "text/event-stream" },
+						});
+					},
+				},
+			);
+			expect(response.stopReason).not.toBe("error");
+			const messages = payload?.messages as Record<string, unknown>[];
+			expect(messages.map((message) => message.role)).toEqual(["user", "assistant", "tool"]);
+			expect(messages[1]).toMatchObject({ content: "", reasoning_content: "" });
+			expect(messages[2]).toEqual({
+				role: "tool",
+				tool_call_id: "call_circle",
+				content: `${withText ? "Diameter: 100 pixels.\n" : ""}(tool image omitted: model does not support images)`,
+			});
+			expect(JSON.stringify(payload)).not.toContain("image_url");
+			expect(JSON.stringify(payload)).not.toContain("aW1hZ2U=");
+		});
+	});
+
 	describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider (gemini-2.5-flash)", () => {
 		const llm = getModel("google", "gemini-2.5-flash");
 

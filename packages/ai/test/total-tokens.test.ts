@@ -417,6 +417,28 @@ describe("totalTokens field", () => {
 		});
 	});
 
+	describe.skipIf(!process.env.LONGCAT_API_KEY)("LongCat", () => {
+		it(
+			"LongCat-2.0 - should return totalTokens equal to sum of components",
+			{ retry: 3, timeout: 60000 },
+			async () => {
+				const llm = getModel("longcat", "LongCat-2.0");
+
+				console.log(`\nLongCat / ${llm.id}:`);
+				const { first, second } = await testTotalTokensWithCache(llm, {
+					apiKey: process.env.LONGCAT_API_KEY,
+					reasoningEffort: "high",
+				});
+
+				logUsage("First request", first);
+				logUsage("Second request", second);
+
+				assertTotalTokensEqualsComponents(first);
+				assertTotalTokensEqualsComponents(second);
+			},
+		);
+	});
+
 	// =========================================================================
 	// z.ai
 	// =========================================================================
